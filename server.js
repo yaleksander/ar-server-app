@@ -1,8 +1,9 @@
-//const http = require("http");
+const http = require("http");
 const spawn = require("child_process").spawn;
 const THREE = require("three-canvas-renderer");
 const express = require("express");
-//const bodyParser = require("body-parser");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 //const multer = require("multer");
 const fs = require("fs");
 const gl = require("gl");
@@ -16,21 +17,12 @@ var preset, done = false;
 var rendW, rendH, renderer, output;
 var vObjHeight, vObjRatio, planeSize;
 
-
-const hostname = "127.0.0.1";
-const port = 3000;
-
 app.use(express.urlencoded({limit: "1mb", extended: true}));
-//app.use(bodyParser.urlencoded({ extended: true }));
+//app.use(bodyParser.urlencoded({limit: "1mb", extended: false}));
 app.engine("html", require("ejs").renderFile);
 app.use("/threejs", express.static(__dirname + "/threejs"));
 //app.use("/uploads", express.static(__dirname + "/uploads"));
-
-
-app.listen(3000, () =>
-{
-	console.log("App listening on port 3000");
-});
+app.use(cors({origin: "*", optionsSuccessStatus: 200}));
 
 /*
 app.get("/threejs", (req, res) => {
@@ -57,17 +49,28 @@ var upload = multer(
 	dest: __dirname + "/uploads/",
 })
 */
+
+const port = 3000;
+const host = "0.0.0.0";
+app.listen(port, host, () =>
+{
+	console.log("App listening on port " + port);
+});
+
 app.post("/threejs", (req, res) =>
 {
+	console.log("received request");
 	initialize(req.body.scene);
 	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/01.jpg", Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/01.jpg", Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	py = spawn("python", [__dirname + "/arshadowgan/test2.py"]);
+	console.log("started python");
+	py = spawn("python", ["-u", __dirname + "/arshadowgan/test2.py"]);
 	py.stdout.on("data", (data) =>
 	{
+		console.log("got python output");
 		data = data.toString();
-		console.log(data);
 		var contour = data.split(" ");
+		console.log(contour);
 		if (isNaN(contour[0]))
 			res.send("0 1 0");
 		else
@@ -86,7 +89,7 @@ app.post("/threejs", (req, res) =>
 				default:
 					result = beginMethod(true, contour, 10, 33, 65, 22, 0, 3);
 			}
-			res.send(result);
+			res.end(result);
 		}
 	});
 });

@@ -7,15 +7,18 @@ import tensorflow as tf
 import imutils
 
 from skimage.metrics import structural_similarity as compare_ssim
+from pathlib import Path
 
+source_path = Path(__file__).resolve()
+source_dir = source_path.parent
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 node_names = {'input_image':      'placeholder/input_image:0',
               'input_mask':       'placeholder/input_mask:0',
               'output_attention': 'concat_1:0',
               'output_image':     'Tanh:0'}
-data_root = 'data'
-#output_dir = 'output'
+data_root = osp.join(source_dir, 'data')
+output_dir = osp.join(source_dir, 'output')
 
 
 def read_image(image_path, channels):
@@ -34,7 +37,7 @@ def test():
 		print("No data directory")
 		exit(0)
 
-	model_pb = osp.join('model', 'model.pb')
+	model_pb = osp.join(source_dir, 'model', 'model.pb')
 	if not osp.exists(model_pb):
 		print("No pre-trained model")
 		exit(0)

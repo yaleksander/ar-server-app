@@ -239,7 +239,6 @@ function sendToServer()
 	params += renderer.domElement.clientWidth.toString() + " ";
 	params += renderer.domElement.clientHeight.toString() + " ";
 	params += "0"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
-	console.log(arToolkitSource);
 
 	var vw, vh;
 	if (arToolkitSource.parameters.sourceType == "webcam")
