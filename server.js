@@ -59,18 +59,18 @@ app.listen(port, host, () =>
 
 app.post("/threejs", (req, res) =>
 {
-	console.log("received request");
+	//console.log("received request");
 	initialize(req.body.scene);
 	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/01.jpg", Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/01.jpg", Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	console.log("started python");
+	//console.log("started python");
 	py = spawn("python", ["-u", __dirname + "/arshadowgan/test2.py"]);
 	py.stdout.on("data", (data) =>
 	{
-		console.log("got python output");
+		//console.log("got python output");
 		data = data.toString();
 		var contour = data.split(" ");
-		console.log(contour);
+		//console.log(contour);
 		if (isNaN(contour[0]))
 			res.send("0 1 0");
 		else
@@ -371,9 +371,9 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax)
 	var minutes = Math.floor(dt / 60000);
 	var seconds = Math.floor((dt - minutes * 60000) / 1000);
 	var miliseconds = dt - minutes * 60000 - seconds * 1000;
-	console.log("00:" + (minutes > 9 ? "" : "0") + minutes + ":" + (seconds > 9 ? "" : "0") + seconds + "," + (miliseconds > 99 ? "" : (miliseconds > 9 ? "0" : "00")) +  + Math.round(miliseconds));
+	//console.log("00:" + (minutes > 9 ? "" : "0") + minutes + ":" + (seconds > 9 ? "" : "0") + seconds + "," + (miliseconds > 99 ? "" : (miliseconds > 9 ? "0" : "00")) +  + Math.round(miliseconds));
 	done = true;
-	console.log(v2[0]);
+	//console.log(v2[0]);
 	return result;
 }
 
@@ -425,10 +425,10 @@ function mainMethod(div, mask, mv, initialVector, objectPosition, alpha, opAlpha
 		}
 
 		// encontra o melhor ponto da calota esferica
-		var res = searchWithinCap(div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, debug, depth, recMax, alpha, opAlpha, alpha);
+		var res = searchWithinCap(div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, depth, recMax, alpha, opAlpha, alpha);
 
 		var newAlpha = res[6];
-		return mainMethod(div, mask, mv, groundTruth, res[0].clone(), objectPosition, newAlpha, opAlpha, debug, v3len, rho, theta, subMax, recMax, depth + 1);
+		return mainMethod(div, mask, mv, res[0].clone(), objectPosition, newAlpha, opAlpha, v3len, rho, theta, subMax, recMax, depth + 1);
 	}
 	else
 		return maxVec.x.toString() + " " + maxVec.y.toString() + " " + maxVec.z.toString();
