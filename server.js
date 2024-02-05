@@ -50,6 +50,8 @@ var upload = multer(
 })
 */
 
+initialize();
+
 const port = 3000;
 const host = "0.0.0.0";
 app.listen(port, host, () =>
@@ -57,17 +59,30 @@ app.listen(port, host, () =>
 	console.log("App listening on port " + port);
 });
 
+process.on("exit", function ()
+{
+	require("child_process").spawn(
+		process.argv.shift(),
+		process.argv,
+		{
+			cwd: process.cwd(),
+			detached: true,
+			stdio: "inherit"
+		}
+	);
+});
+
 app.post("/threejs", (req, res) =>
 {
-	//console.log("received request");
-	initialize(req.body.scene);
+	console.log("received request");
+	resetParameters(req.body.scene);
 	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/01.jpg", Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/01.jpg", Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	//console.log("started python");
+	console.log("started python");
 	py = spawn("python", ["-u", __dirname + "/arshadowgan/test2.py"]);
 	py.stdout.on("data", (data) =>
 	{
-		//console.log("got python output");
+		console.log("got python output");
 		data = data.toString();
 		var contour = data.split(" ");
 		//console.log(contour);
@@ -90,6 +105,7 @@ app.post("/threejs", (req, res) =>
 					result = beginMethod(true, contour, 10, 33, 65, 22, 0, 3);
 			}
 			res.end(result);
+			process.exit();
 		}
 	});
 });
@@ -106,7 +122,7 @@ function combine3(list)
 }
 
 
-function initialize(params)
+function initialize()
 {
 	/**********************************************************************************************
 	 *
@@ -162,6 +178,12 @@ function initialize(params)
 	for (var i = 0; i < 8 * 3; i++)
 		vertices.push(0);
 	bufGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertices), 3));
+	var indices = [];
+	for (var i = 0; i < 8; i++)
+		for (var j = i + 1; j < 8; j++)
+			for (var k = j + 1; k < 8; k++)
+				indices.push(i, j, k);
+	bufGeo.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1));
 
 	/**********************************************************************************************
 	 *
@@ -186,13 +208,11 @@ function initialize(params)
 	scene.add(fakeShadow);
 	scene.add(vObj);
 	scene.add(plane);
+}
 
-	/**********************************************************************************************
-	 *
-	 * Renderer e parametros globais
-	 *
-	 *********************************************************************************************/
 
+function resetParameters(params)
+{
 	params = params.split(" ");
 	var p = new THREE.Matrix4();
 	for (var i = 0; i < 16; i++)
@@ -374,6 +394,26 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax)
 	//console.log("00:" + (minutes > 9 ? "" : "0") + minutes + ":" + (seconds > 9 ? "" : "0") + seconds + "," + (miliseconds > 99 ? "" : (miliseconds > 9 ? "0" : "00")) +  + Math.round(miliseconds));
 	done = true;
 	//console.log(v2[0]);
+//=====================================================================================================================================================================================================
+	var vt = result.split(" ");
+	vt = new THREE.Vector3(parseFloat(vt[0]), parseFloat(vt[1]), parseFloat(vt[2]));
+	getRenderValue(v3[k][1], vt, mask);
+	var w  = rendW;
+	var h  = rendH;
+	var cw = (w > h) ? Math.floor((w / h) * 256) : 256;
+	var ch = (h > w) ? Math.floor((h / w) * 256) : 256;
+	var pw = Math.floor((cw - 256) / 2);
+	var ph = Math.floor((ch - 256) / 2);
+	var crop = createCanvas(cw, ch).getContext("2d").getImageData(0, 0, cw, ch);
+	for (var i = 0; i < ch; i++)
+		for (var j = 0; j < cw; j++)
+			for (var k = 0; k < 4; k++)
+				crop.data[(i * cw + j) * 4 + k] = output[(w * h - parseInt(i * h / ch) * w + parseInt(j * w / cw)) * 4 + k];
+	var canvas = createCanvas(256, 256);
+	var ctx = canvas.getContext("2d");
+	ctx.putImageData(crop, -pw, -ph);
+	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/crop.jpg", Buffer.from(canvas.toDataURL().replace(/^data:image\/\w+;base64,/, ""), "base64"));
+//=====================================================================================================================================================================================================
 	return result;
 }
 

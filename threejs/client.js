@@ -225,6 +225,9 @@ function initialize()
 
 function sendToServer()
 {
+	light.position.set(0, 10, 0);
+	renderer.render(mainScene, camera);
+
 	var $form = $("#submitButton");
 	var params = "";
 	var inv = camera.projectionMatrix.clone();
@@ -238,7 +241,7 @@ function sendToServer()
 		params += inv.elements[i] + " ";
 	params += renderer.domElement.clientWidth.toString() + " ";
 	params += renderer.domElement.clientHeight.toString() + " ";
-	params += "0"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
+	params += "1"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
 
 	var vw, vh;
 	if (arToolkitSource.parameters.sourceType == "webcam")
