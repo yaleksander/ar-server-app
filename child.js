@@ -108,7 +108,7 @@ function initialize(contour, params)
 	const renderer = new THREE.WebGLRenderer(
 	{
 		canvas: canvas,
-		powerPreference: "high-performance",
+		//powerPreference: "high-performance",
 		context: gl(rendW, rendH,
 		{
 			preserveDrawingBuffer: true
@@ -190,7 +190,7 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 		var intersect = ray.intersectObject(plane);
 		if (intersect.length > 0)
 			v2.push(new THREE.Vector3((intersect[0].uv.x - 0.5) * planeSize + plane.position.x, plane.position.y, (0.5 - intersect[0].uv.y) * planeSize + plane.position.z));
-		if (recMax == 0)
+		//if (recMax == 0)
 			break;
 	}
 
@@ -249,13 +249,13 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 		var v = (vObj.position.clone().sub(v2[0].clone())).normalize().multiplyScalar(3 * vObjRatio * vObjHeight).add(vObj.position);
 		result = v.x.toString() + " " + v.y.toString() + " " + v.z.toString();
 	}
-
+/*
 	var endTime = performance.now();
 	var dt = endTime - startTime;
 	var minutes = Math.floor(dt / 60000);
 	var seconds = Math.floor((dt - minutes * 60000) / 1000);
 	var miliseconds = dt - minutes * 60000 - seconds * 1000;
-
+*/
 	return result;
 }
 
@@ -306,7 +306,7 @@ function mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, 
 		}
 
 		// encontra o melhor ponto da calota esferica
-		var res = searchWithinCap(div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, depth, recMax, alpha, opAlpha, alpha);
+		var res = searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, depth, recMax, alpha, opAlpha, alpha);
 
 		var newAlpha = res[6];
 		return mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, res[0].clone(), objectPosition, newAlpha, opAlpha, v3len, rho, theta, subMax, recMax, depth + 1);
