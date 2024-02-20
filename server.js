@@ -41,7 +41,6 @@ app.post("/threejs", (req, res) =>
 		{
 			var result = "";
 			var child = spawn("node", [__dirname + "/child.js", pyData, req.body.scene]);
-			console.log("node child.js " + pyData + " " + req.body.scene);
 			child.stdout.on("data", (data) =>
 			{
 				result = data.toString();
