@@ -14,7 +14,7 @@ The requirements for the server side are the same as ARShadowGAN, which is used 
 * python (3.5.4)
 * Node.js (16.0.0)
 
-This code has been tested under Windows 10 and Ubuntu 22.04 successfully with all the requirements and dependencies.
+This code has been tested under Windows 10 and Ubuntu 22.04 successfully with all the requirements.
 
 ## The code
 
