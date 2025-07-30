@@ -28,7 +28,7 @@ app.post("/threejs", (req, res) =>
 	console.log((id < 10 ? "0" : "") + id + ": received request");
 	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/01.jpg", Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/01.jpg", Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	var py = spawn("python", ["-u", __dirname + "/arshadowgan/test2.py"]);
+	var py = spawn("python", ["-u", __dirname + "/arshadowgan/getShadow.py"]);
 	console.log((id < 10 ? "0" : "") + id + ": started python");
 	py.stdout.on("data", (pyData) =>
 	{
