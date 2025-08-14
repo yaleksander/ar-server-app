@@ -30,3 +30,7 @@ arshadowgan/getShadow.py
 ## The dataset
 
 The dataset mentioned in the paper can be found inside `threejs/my-images`.
+
+## Ablation study
+
+The ablation study is registered at `ablation.pdf`.
