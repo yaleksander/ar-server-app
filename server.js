@@ -9,7 +9,7 @@ const app = express();
 app.use(express.urlencoded({limit: "1mb", extended: true}));
 app.engine("html", require("ejs").renderFile);
 app.use("/threejs", express.static(__dirname + "/threejs"));
-app.use(cors({origin: "*", optionsSuccessStatus: 200}));
+app.use(cors({ origin: "*", optionsSuccessStatus: 200 }));
 
 var globalID = 1;
 
@@ -26,8 +26,8 @@ app.post("/threejs", (req, res) =>
 	if (globalID > 99)
 		globalID = 1;
 	console.log((id < 10 ? "0" : "") + id + ": received request");
-	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/01.jpg", Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/01.jpg", Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
+	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/" + req.body.imgFile, Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
+	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/" + req.body.imgFile, Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	var py = spawn("python", ["-u", __dirname + "/arshadowgan/getShadow.py"]);
 	console.log((id < 10 ? "0" : "") + id + ": started python");
 	py.stdout.on("data", (pyData) =>
@@ -48,6 +48,13 @@ app.post("/threejs", (req, res) =>
 				console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
 				res.send(result);
 				child.kill();
+				global.gc();
+			});
+			child.stderr.on("data", (data) =>
+			{
+				console.log(data.toString());
+				child.kill();
+				global.gc();
 			});
 		}
 		py.kill();

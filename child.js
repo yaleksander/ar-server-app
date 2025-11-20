@@ -1,9 +1,9 @@
 const THREE = require("three-canvas-renderer");
 const gl = require("gl");
-const {createCanvas, loadImage} = require("canvas");
+const { createCanvas, loadImage } = require("canvas");
 
-console.log(initialize(process.argv[2].split(" "), process.argv[3]));
-
+var extraStuff = "";
+console.log(initialize(process.argv[2].split(" "), process.argv[3]) + extraStuff);
 
 function getMidPoints(p, t, r) // p: pontos, t: tolerancia, r: recursoes
 {
@@ -28,7 +28,6 @@ function getMidPoints(p, t, r) // p: pontos, t: tolerancia, r: recursoes
 	}
 	return p;
 }
-
 
 function initialize(contour, params)
 {
@@ -126,23 +125,23 @@ function initialize(contour, params)
 	var output = new Uint8Array(rendW * rendH * 4);
 
 	// resultado para o node
+	var step = Math.PI * 2 / 4;
 	var result = "0 1 0";
 	switch (preset)
 	{
-		case 1:
-			result = beginMethod(true, contour, 10, 33, 65, 22, 1, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+		case 2:
+			result = beginMethod(step, contour, 10, 129, 513, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 			break;
 
-		case 2:
-			result = beginMethod(true, contour, 10, 33, 65, 22, 2, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+		case 1:
+			result = beginMethod(step, contour, 10, 65, 257, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 			break;
 
 		default:
-			result = beginMethod(true, contour, 10, 33, 65, 22, 0, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+			result = beginMethod(step, contour, 10, 5, 17, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 	}
 	return result;
 }
-
 
 function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize)
 {
@@ -259,41 +258,41 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 	return result;
 }
 
-
 function mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, initialVector, objectPosition, alpha, opAlpha, v3len, rho = 257, theta = 257, subMax = 1, recMax = 1, depth = 1)
 {
+	//console.log(process.memoryUsage());
 	var v5 = initialVector.normalize();
 
-	// cria o mapa
-	var ni = rho;
-	var nj = theta;
-	var si = alpha / ni;
-	var sj = Math.PI * 2 / nj;
-	var v7 = new THREE.Vector3(0, 1, 0).cross(v5);
-	var v8 = v5.clone();
-	var vl = [];
-	var maxRenderVal = 0;
-	var maxVec;// = v8.clone().multiplyScalar(5).add(objectPosition);
-	for (var i = 0; i < ni; i++)
+	if (depth <= recMax)
 	{
-		v8.applyAxisAngle(v7, si);
-		vl.push([]);
-		for (var j = 0; j < nj; j++)
+		// cria o mapa
+		var ni = rho;
+		var nj = theta;
+		var si = alpha / ni;
+		var sj = Math.PI * 2 / nj;
+		var v7 = new THREE.Vector3(0, 1, 0).cross(v5);
+		var v8 = v5.clone();
+		var vl = [];
+		var maxRenderVal = 0;
+		var maxVec;// = v8.clone().multiplyScalar(5).add(objectPosition);
+		for (var i = 0; i < ni; i++)
 		{
-			v8.applyAxisAngle(v5, sj);
-			var v9 = v8.clone().multiplyScalar(5).add(objectPosition);
-			var renderVal = getRenderValue(objectPosition, v9, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
-			vl[i].push([v9, renderVal, (i / ni) * Math.cos(j * sj), (i / ni) * Math.sin(j * sj) * -1, 0]);
-			if (renderVal > maxRenderVal)
+			v8.applyAxisAngle(v7, si);
+			vl.push([]);
+			for (var j = 0; j < nj; j++)
 			{
-				maxVec = v9;
-				maxRenderVal = renderVal;
+				v8.applyAxisAngle(v5, sj);
+				var v9 = v8.clone().multiplyScalar(5).add(objectPosition);
+				var renderVal = getRenderValue(objectPosition, v9, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+				vl[i].push([v9, renderVal, (i / ni) * Math.cos(j * sj), (i / ni) * Math.sin(j * sj) * -1, 0]);
+				if (renderVal > maxRenderVal)
+				{
+					maxVec = v9;
+					maxRenderVal = renderVal;
+				}
 			}
 		}
-	}
 
-	if (depth < recMax)
-	{
 		// calcula a imagem integral
 		vl[0][0][4] = vl[0][0][1];
 		for (var i = 1; i < vl[0].length; i++)
@@ -307,33 +306,34 @@ function mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, 
 
 		// encontra o melhor ponto da calota esferica
 		var res = searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, depth, recMax, alpha, opAlpha, alpha);
-
+		vl = [];
 		var newAlpha = res[6];
 		return mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, res[0].clone(), objectPosition, newAlpha, opAlpha, v3len, rho, theta, subMax, recMax, depth + 1);
 	}
-	else
-		return maxVec.x.toString() + " " + maxVec.y.toString() + " " + maxVec.z.toString();
+	return v5.x.toString() + " " + v5.y.toString() + " " + v5.z.toString();
 }
 
-
 //
-function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, extra, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha, beta = Math.PI, theta = 0, p0 = v0.clone(), prev = 0, depth = 1, path = [])
+function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha, beta = Math.PI, theta = 0, p0 = v0.clone(), prev = 0, depth = 1, path = [])
 {
 	var p = [];
+	var sectors;
 
 	if (depth == 1)
 	{
+		sectors = Math.ceil(Math.PI * 2 / step);
 		var axis = new THREE.Vector3(0, 1, 0).cross(v0).normalize();
-		for (var i = 0; i < (extra ? 8 : 4); i++)
+		for (var i = 0; i < sectors; i++)
 		{
 			p.push(p0.clone().applyAxisAngle(axis, alpha / 2));
-			p[i].applyAxisAngle(v0, i * Math.PI / (extra ? 4 : 2) + Math.PI / 4);
+			p[i].applyAxisAngle(v0, i * Math.PI * 2 / sectors + Math.PI / 4);
 		}
 	}
 	else
 	{
+		sectors = 4;
 		var axis = v0.clone().cross(p0).normalize();
-		for (var i = 0; i < (extra ? 8 : 4); i++)
+		for (var i = 0; i < 4; i++)
 			p.push(p0.clone());
 		p[0].applyAxisAngle(axis,  alpha / 2);
 		p[1].applyAxisAngle(axis, -alpha / 2);
@@ -343,31 +343,23 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		p[1].applyAxisAngle(v0,    beta  / 4);
 		p[2].applyAxisAngle(v0,   -beta  / 4);
 		p[3].applyAxisAngle(v0,   -beta  / 4);
-
-		if (extra)
-		{
-			p[4].applyAxisAngle(v0,    beta  / 4);
-			p[5].applyAxisAngle(axis, -alpha / 2);
-			p[6].applyAxisAngle(v0,   -beta  / 4);
-			p[7].applyAxisAngle(axis,  alpha / 2);
-		}
 	}
 	var dist = [];
-	for (var i = 0; i < (extra ? 8 : 4); i++)
+	for (var i = 0; i < sectors; i++)
 		dist.push(p0.angleTo(p[i]));
 	var distMax = Math.max(dist[0], dist[1], dist[2], dist[3]);
 
 	var list = [];
 	var res = [];
 	var r0, r1, t0, t1, r0f, r1f, t0f, t1f;
-	for (var i = 0; i < (extra ? 8 : 4); i++)
+	for (var i = 0; i < sectors; i++)
 	{
 		var val = 0;
 		if (depth == 1)
 		{
 			r0 = 0;
 			r1 = alpha;
-			t0 = i * Math.PI / (extra ? 4 : 2);
+			t0 = i * Math.PI * 2 / sectors;
 			t1 = t0 + Math.PI / 2;
 		}
 		else
@@ -559,15 +551,27 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		}
 	}
 	else
-		theta = list[0][2] * Math.PI / (extra ? 4 : 2) + Math.PI / 4;
+		theta = list[0][2] * Math.PI * 2 / sectors + Math.PI / 4;
 	path.push([list[0][7], list[0][8], list[0][9], list[0][10]]);
 
 	if (depth >= subMax)// || prev > res[list[0][1]]) // se nao houver candidato melhor que o anterior
+	{
+		extraStuff += " [MAP] ";
+		for (var i = 0; i < map.length; i++)
+			for (var j = 0; j < map[i].length; j++)
+				extraStuff += map[i][j][1] + " ";
+		extraStuff += " [PATH] ";
+		for (var i = 0; i < path.length; i++)
+		{
+			for (var j = 0; j < path[i].length; j++)
+				extraStuff += path[i][j] + " ";
+			extraStuff += "";
+		}
 		return [list[0][0], list[0][3], list[0][4], path, list[0][1], depth - 1, distMax];
+	}
 	else
-		return searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, extra, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha / 2, beta / 2, theta, list[0][0], res[list[0][2]], depth + 1, path);
+		return searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha / 2, beta / 2, theta, list[0][0], res[list[0][2]], depth + 1, path);
 }
-
 
 function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize)
 {

@@ -16,9 +16,28 @@ var adjustX        =   0.00;
 var adjustZ        =   0.00;
 var done           =  false;
 
+const imgList =
+[
+	"01.jpg",
+	"my-images/current/02.jpg",
+	"my-images/current/03.jpg",
+	"my-images/current/04.jpg",
+	"my-images/current/05.jpg",
+	"my-images/current/06.jpg",
+	"my-images/current/07.jpg",
+	"my-images/current/08.jpg",
+	"my-images/current/09.jpg",
+	"my-images/current/10.jpg",
+	"my-images/current/11.jpg",
+	"my-images/current/12.jpg",
+	"my-images/current/13.jpg",
+	"my-images/current/14.jpg",
+	"my-images/current/15.jpg",
+	"my-images/current/16.jpg"
+];
+
 initialize();
 animate();
-
 
 function onResize()
 {
@@ -29,7 +48,6 @@ function onResize()
 		arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
 	}
 }
-
 
 function initialize()
 {
@@ -77,7 +95,7 @@ function initialize()
 
 	arToolkitSource = new THREEx.ArToolkitSource({
 //		sourceType: "webcam",
-		sourceType: "image", sourceUrl: "my-images/frame.jpg",
+		sourceType: "image", sourceUrl: "my-images/current/" + imgList[0],
 	});
 
 	arToolkitSource.init(function onReady(){
@@ -222,8 +240,7 @@ function initialize()
 	light.target = emptyObj;
 }
 
-
-function sendToServer()
+function sendToServer(imgID = 0)
 {
 	light.position.set(0, 10, 0);
 	renderer.render(mainScene, camera);
@@ -241,7 +258,7 @@ function sendToServer()
 		params += inv.elements[i] + " ";
 	params += renderer.domElement.clientWidth.toString() + " ";
 	params += renderer.domElement.clientHeight.toString() + " ";
-	params += "2"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
+	params += "0"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
 
 	var vw, vh;
 	if (arToolkitSource.parameters.sourceType == "webcam")
@@ -251,9 +268,12 @@ function sendToServer()
 	}
 	else
 	{
+		arToolkitSource.parameters.sourceUrl = "my-images/current/" + imgList[imgID];
+		arToolkitContext.update(arToolkitSource.domElement);
 		vw = arToolkitSource.domElement.naturalWidth;
 		vh = arToolkitSource.domElement.naturalHeight;
 	}
+	renderer.render(mainScene, camera);
 	var w   = renderer.domElement.width;
 	var h   = renderer.domElement.height;
 	var cw  = renderer.domElement.clientWidth;
@@ -290,7 +310,7 @@ function sendToServer()
 	ctx.putImageData(data, 0, 0);
 	var mask = canvas.toDataURL("image/jpeg");
 	var url = $form.attr("action");
-	var posting = $.post(url, {scene: params, img: img, mask: mask});
+	var posting = $.post(url, {scene: params, img: img, mask: mask, imgFile: imgList[imgID]});
 	posting.done(function(data)
 	{
 		data = data.split(" ");
@@ -299,9 +319,10 @@ function sendToServer()
 		v.add(vObj.position.clone());
 		console.log(v);
 		light.position.set(v.x, v.y, v.z);
+		if (imgID < imgList.length)
+			setTimeout(sendToServer, 2000, imgID + 1);
 	});
 }
-
 
 function update()
 {
@@ -309,12 +330,10 @@ function update()
 		arToolkitContext.update(arToolkitSource.domElement);
 }
 
-
 function render()
 {
 	renderer.render(mainScene, camera);
 }
-
 
 function animate()
 {
