@@ -20,7 +20,6 @@ node_names = {'input_image':      'placeholder/input_image:0',
 data_root = osp.join(source_dir, 'data')
 output_dir = osp.join(source_dir, 'output')
 
-
 def read_image(image_path, channels):
 	image = cv.imread(image_path, cv.IMREAD_COLOR)
 	if channels == 3:
@@ -30,7 +29,6 @@ def read_image(image_path, channels):
 		image = np.expand_dims(image, 2)
 	image = image.astype(np.float32) / 127.5 - 1.0
 	return image
-
 
 def test():
 	if not osp.exists(data_root):
@@ -69,6 +67,8 @@ def test():
 		mask_batch  = np.zeros((1, 256, 256, 1))
 
 		for i in image_list:
+			if (len(sys.argv) > 1 and i != sys.argv[1]): # imprime apenas o contorno de interesse
+				continue
 			image_batch[0] = read_image(osp.join(data_root, 'noshadow', i), 3)
 			mask_batch[0]  = 0 - read_image(osp.join(data_root, 'mask', i), 1)
 
@@ -151,7 +151,7 @@ def test():
 				#print (x, y)
 				#cv.drawContours(diff, cm, -1, (255, 0, 0), 5)
 				cv.circle(diff, (x, y), 3, (0, 0, 255), -1)
-			else:                                              # se nao foi encontrado nenhum contorno, nao desenha nada e anota x e y como negativos (erro)
+			else: # se nao foi encontrado nenhum contorno, nao desenha nada e anota x e y como negativos (erro)
 				x = -1
 				y = -1
 			s = str(x) + " " + str(y) + " "
@@ -163,7 +163,6 @@ def test():
 			#file.write(s[:-1] + "\n")
 			cv.imwrite(osp.join(output_dir, 'contours_' + i), diff)
 	#file.close()
-
 
 if __name__ == '__main__':
 	test()

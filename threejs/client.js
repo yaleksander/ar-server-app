@@ -19,34 +19,39 @@ var done           =  false;
 const imgList =
 [
 	"01.jpg",
-	"my-images/current/02.jpg",
-	"my-images/current/03.jpg",
-	"my-images/current/04.jpg",
-	"my-images/current/05.jpg",
-	"my-images/current/06.jpg",
-	"my-images/current/07.jpg",
-	"my-images/current/08.jpg",
-	"my-images/current/09.jpg",
-	"my-images/current/10.jpg",
-	"my-images/current/11.jpg",
-	"my-images/current/12.jpg",
-	"my-images/current/13.jpg",
-	"my-images/current/14.jpg",
-	"my-images/current/15.jpg",
-	"my-images/current/16.jpg"
+	"02.jpg",
+	"03.jpg",
+	"04.jpg",
+	"05.jpg",
+	"06.jpg",
+	"07.jpg",
+	"08.jpg",
+	"09.jpg",
+	"10.jpg",
+	"11.jpg",
+	"12.jpg",
+	"13.jpg",
+	"14.jpg",
+	"15.jpg",
+	"16.jpg"
 ];
 
 initialize();
 animate();
 
+function updatePic(imgID)
+{
+	arToolkitSource.parameters.sourceUrl = "my-images/current/" + imgList[imgID];
+	arToolkitSource.domElement.src = "my-images/current/" + imgList[imgID];
+	arToolkitContext.update(arToolkitSource.domElement);
+}
+
 function onResize()
 {
-	arToolkitSource.onResizeElement()	
-	arToolkitSource.copyElementSizeTo(renderer.domElement)	
-	if ( arToolkitContext.arController !== null )
-	{
-		arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
-	}
+	arToolkitSource.onResizeElement();
+	arToolkitSource.copyElementSizeTo(renderer.domElement);
+	if (arToolkitContext.arController !== null)
+		arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
 }
 
 function initialize()
@@ -240,7 +245,7 @@ function initialize()
 	light.target = emptyObj;
 }
 
-function sendToServer(imgID = 0)
+function sendToServer(preset, imgID = 0)
 {
 	light.position.set(0, 10, 0);
 	renderer.render(mainScene, camera);
@@ -258,7 +263,7 @@ function sendToServer(imgID = 0)
 		params += inv.elements[i] + " ";
 	params += renderer.domElement.clientWidth.toString() + " ";
 	params += renderer.domElement.clientHeight.toString() + " ";
-	params += "0"; // preset, pode ser alterado eventualmente. pode ser 0, 1 ou 2
+	params += preset.toString(); // pode ser alterado eventualmente. pode ser 0, 1 ou 2
 
 	var vw, vh;
 	if (arToolkitSource.parameters.sourceType == "webcam")
@@ -268,60 +273,62 @@ function sendToServer(imgID = 0)
 	}
 	else
 	{
-		arToolkitSource.parameters.sourceUrl = "my-images/current/" + imgList[imgID];
-		arToolkitContext.update(arToolkitSource.domElement);
+		updatePic(imgID);
 		vw = arToolkitSource.domElement.naturalWidth;
 		vh = arToolkitSource.domElement.naturalHeight;
 	}
-	renderer.render(mainScene, camera);
-	var w   = renderer.domElement.width;
-	var h   = renderer.domElement.height;
-	var cw  = renderer.domElement.clientWidth;
-	var ch  = renderer.domElement.clientHeight;
-	var pw  = (cw > ch) ? Math.floor((cw - ch) / 2.0) : 0;
-	var ph  = (ch > cw) ? Math.floor((ch - cw) / 2.0) : 0;
-	var pvw = (vw > vh) ? Math.floor((vw - vh) / 2.0) : 0;
-	var pvh = (vh > vw) ? Math.floor((vh - vw) / 2.0) : 0;
-	var canvas = document.createElement("canvas");
-	var client = document.createElement("canvas");
-	canvas.width  = 256;
-	canvas.height = 256;
-	client.width  = cw;
-	client.height = ch;
-	var ctx = canvas.getContext("2d");
-	var aux = client.getContext("2d");
-	ctx.drawImage(arToolkitSource.domElement, pvw, pvh, vw - pvw * 2, vh - pvh * 2, 0, 0, 256, 256);
-	aux.drawImage(renderer.domElement, 0, 0, w, h, 0, 0, cw, ch);
-	ctx.drawImage(client, pw, ph, cw - pw * 2, ch - ph * 2, 0, 0, 256, 256);
-	var img = canvas.toDataURL("image/jpeg");
-	ctx.clearRect(0, 0, 256, 256);
-	ctx.drawImage(client, pw, ph, cw - pw * 2, ch - ph * 2, 0, 0, 256, 256);
-	var data = ctx.getImageData(0, 0, 256, 256);
-	for (var i = 0; i < 256 * 256 * 4; i += 4)
+	setTimeout(() =>
 	{
-		if (data.data[i] > 0 || data.data[i + 1] > 0 || data.data[i + 2] > 0)
+		renderer.render(mainScene, camera);
+		var w   = renderer.domElement.width;
+		var h   = renderer.domElement.height;
+		var cw  = renderer.domElement.clientWidth;
+		var ch  = renderer.domElement.clientHeight;
+		var pw  = (cw > ch) ? Math.floor((cw - ch) / 2.0) : 0;
+		var ph  = (ch > cw) ? Math.floor((ch - cw) / 2.0) : 0;
+		var pvw = (vw > vh) ? Math.floor((vw - vh) / 2.0) : 0;
+		var pvh = (vh > vw) ? Math.floor((vh - vw) / 2.0) : 0;
+		var canvas = document.createElement("canvas");
+		var client = document.createElement("canvas");
+		canvas.width  = 256;
+		canvas.height = 256;
+		client.width  = cw;
+		client.height = ch;
+		var ctx = canvas.getContext("2d");
+		var aux = client.getContext("2d");
+		ctx.drawImage(arToolkitSource.domElement, pvw, pvh, vw - pvw * 2, vh - pvh * 2, 0, 0, 256, 256);
+		aux.drawImage(renderer.domElement, 0, 0, w, h, 0, 0, cw, ch);
+		ctx.drawImage(client, pw, ph, cw - pw * 2, ch - ph * 2, 0, 0, 256, 256);
+		var img = canvas.toDataURL("image/jpeg");
+		ctx.clearRect(0, 0, 256, 256);
+		ctx.drawImage(client, pw, ph, cw - pw * 2, ch - ph * 2, 0, 0, 256, 256);
+		var data = ctx.getImageData(0, 0, 256, 256);
+		for (var i = 0; i < 256 * 256 * 4; i += 4)
 		{
-			data.data[i]     = 255;
-			data.data[i + 1] = 255;
-			data.data[i + 2] = 255;
+			if (data.data[i] > 0 || data.data[i + 1] > 0 || data.data[i + 2] > 0)
+			{
+				data.data[i]     = 255;
+				data.data[i + 1] = 255;
+				data.data[i + 2] = 255;
+			}
+			data.data[i + 3] = 255;
 		}
-		data.data[i + 3] = 255;
-	}
-	ctx.putImageData(data, 0, 0);
-	var mask = canvas.toDataURL("image/jpeg");
-	var url = $form.attr("action");
-	var posting = $.post(url, {scene: params, img: img, mask: mask, imgFile: imgList[imgID]});
-	posting.done(function(data)
-	{
-		data = data.split(" ");
-		var v = new THREE.Vector3(parseFloat(data[0]), parseFloat(data[1]), parseFloat(data[2]));
-		v.multiplyScalar(5);
-		v.add(vObj.position.clone());
-		console.log(v);
-		light.position.set(v.x, v.y, v.z);
-		if (imgID < imgList.length)
-			setTimeout(sendToServer, 2000, imgID + 1);
-	});
+		ctx.putImageData(data, 0, 0);
+		var mask = canvas.toDataURL("image/jpeg");
+		var url = $form.attr("action");
+		var posting = $.post(url, {scene: params, img: img, mask: mask, imgFile: imgList[imgID]});
+		posting.done(function(data)
+		{
+			data = data.split(" ");
+			var v = new THREE.Vector3(parseFloat(data[0]), parseFloat(data[1]), parseFloat(data[2]));
+			v.multiplyScalar(5);
+			v.add(vObj.position.clone());
+			console.log(v);
+			light.position.set(v.x, v.y, v.z);
+			if (++imgID < imgList.length)
+				setTimeout(sendToServer, 10000, preset, imgID);
+		});
+	}, 3000);
 }
 
 function update()

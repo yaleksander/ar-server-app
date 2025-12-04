@@ -2,7 +2,7 @@ const THREE = require("three-canvas-renderer");
 const gl = require("gl");
 const { createCanvas, loadImage } = require("canvas");
 
-var extraStuff = "";
+var canvas, ctx, blankImgData, extraStuff = "";
 console.log(initialize(process.argv[2].split(" "), process.argv[3]) + extraStuff);
 
 function getMidPoints(p, t, r) // p: pontos, t: tolerancia, r: recursoes
@@ -100,13 +100,27 @@ function initialize(contour, params)
 	scene.updateMatrixWorld(true);
 	camera.updateMatrixWorld(true);
 
+	// canvas "em segundo plano"
+	var w  = rendW;
+	var h  = rendH;
+	var cw = (w > h) ? Math.floor((w / h) * 256) : 256;
+	var ch = (h > w) ? Math.floor((h / w) * 256) : 256;
+	var pw = Math.floor((cw - 256) / 2);
+	var ph = Math.floor((ch - 256) / 2);
+	var padw = (w > h) ? Math.floor((w - h) / 2.0) : 0;
+	var padh = (h > w) ? Math.floor((h - w) / 2.0) : 0;
+	canvas = createCanvas(cw, ch);
+	ctx = canvas.getContext("2d", {willReadFrequently: true});
+	ctx.fillStyle = "white";
+	blankImgData = ctx.createImageData(cw, ch);
+
 	// canvas e renderer
-	const canvas = createCanvas(rendW, rendH);
-	canvas.addEventListener = (type, handler) => {};
-	canvas.removeEventListener = (type) => {};
+	const rcanvas = createCanvas(rendW, rendH);
+	rcanvas.addEventListener = (type, handler) => {};
+	rcanvas.removeEventListener = (type) => {};
 	const renderer = new THREE.WebGLRenderer(
 	{
-		canvas: canvas,
+		canvas: rcanvas,
 		//powerPreference: "high-performance",
 		context: gl(rendW, rendH,
 		{
@@ -125,7 +139,7 @@ function initialize(contour, params)
 	var output = new Uint8Array(rendW * rendH * 4);
 
 	// resultado para o node
-	var step = Math.PI * 2 / 4;
+	var step = Math.PI * 2 / 12;
 	var result = "0 1 0";
 	switch (preset)
 	{
@@ -138,7 +152,7 @@ function initialize(contour, params)
 			break;
 
 		default:
-			result = beginMethod(step, contour, 10, 5, 17, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+			result = beginMethod(step, contour, 10, 9, 33, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 	}
 	return result;
 }
@@ -240,13 +254,19 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 		k = mi;
 
 		var v5 = v3[k][2].clone().sub(v3[k][1]).normalize();
-		alpha *= Math.PI / 180;
-		result = mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, v5.normalize(), v3[k][1], alpha, alpha, v3.length, rho, theta, subMax, recMax);
+		alpha = (alpha / 2) * Math.PI / 180;
+		for (var i = 0; i < recMax; i++)
+		{
+			result = mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, v5.normalize(), v3[k][1], alpha, alpha, v3.length, rho, theta, subMax);
+			v5 = result[0];
+			alpha = result[1];
+		}
+		result = result[0].x.toFixed(3) + " " + result[0].y.toFixed(3) + " " + result[0].z.toFixed(3) + " " + result[2].toFixed(3);
 	}
 	else
 	{
 		var v = (vObj.position.clone().sub(v2[0].clone())).normalize().multiplyScalar(3 * vObjRatio * vObjHeight).add(vObj.position);
-		result = v.x.toString() + " " + v.y.toString() + " " + v.z.toString();
+		result = v.x.toFixed(3) + " " + v.y.toFixed(3) + " " + v.z.toFixed(3) + " 0.000";
 	}
 /*
 	var endTime = performance.now();
@@ -258,63 +278,57 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 	return result;
 }
 
-function mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, initialVector, objectPosition, alpha, opAlpha, v3len, rho = 257, theta = 257, subMax = 1, recMax = 1, depth = 1)
+function mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, initialVector, objectPosition, alpha, opAlpha, v3len, rho, theta, subMax)
 {
 	//console.log(process.memoryUsage());
 	var v5 = initialVector.normalize();
 
-	if (depth <= recMax)
+	// cria o mapa
+	var ni = rho;
+	var nj = theta;
+	var si = alpha / ni;
+	var sj = Math.PI * 2 / nj;
+	var v7 = new THREE.Vector3(0, 1, 0).cross(v5);
+	var v8 = v5.clone();
+	var vl = [];
+	var maxRenderVal = 0;
+	var maxVec;// = v8.clone().multiplyScalar(5).add(objectPosition);
+	for (var i = 0; i < ni; i++)
 	{
-		// cria o mapa
-		var ni = rho;
-		var nj = theta;
-		var si = alpha / ni;
-		var sj = Math.PI * 2 / nj;
-		var v7 = new THREE.Vector3(0, 1, 0).cross(v5);
-		var v8 = v5.clone();
-		var vl = [];
-		var maxRenderVal = 0;
-		var maxVec;// = v8.clone().multiplyScalar(5).add(objectPosition);
-		for (var i = 0; i < ni; i++)
+		v8.applyAxisAngle(v7, si);
+		vl.push([]);
+		for (var j = 0; j < nj; j++)
 		{
-			v8.applyAxisAngle(v7, si);
-			vl.push([]);
-			for (var j = 0; j < nj; j++)
+			v8.applyAxisAngle(v5, sj);
+			var v9 = v8.clone().multiplyScalar(5).add(objectPosition);
+			var renderVal = getRenderValue(objectPosition, v9, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+			vl[i].push([v9, renderVal, (i / ni) * Math.cos(j * sj), (i / ni) * Math.sin(j * sj) * -1, 0]);
+			if (renderVal > maxRenderVal)
 			{
-				v8.applyAxisAngle(v5, sj);
-				var v9 = v8.clone().multiplyScalar(5).add(objectPosition);
-				var renderVal = getRenderValue(objectPosition, v9, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
-				vl[i].push([v9, renderVal, (i / ni) * Math.cos(j * sj), (i / ni) * Math.sin(j * sj) * -1, 0]);
-				if (renderVal > maxRenderVal)
-				{
-					maxVec = v9;
-					maxRenderVal = renderVal;
-				}
+				maxVec = v9;
+				maxRenderVal = renderVal;
 			}
 		}
-
-		// calcula a imagem integral
-		vl[0][0][4] = vl[0][0][1];
-		for (var i = 1; i < vl[0].length; i++)
-			vl[0][i][4] = vl[0][i - 1][4] + vl[0][i][1];
-		for (var i = 1; i < vl.length; i++)
-		{
-			vl[i][0][4] = vl[i - 1][0][4] + vl[i][0][1];
-			for (var j = 1; j < vl[i].length; j++)
-				vl[i][j][4] = vl[i][j][1] + vl[i][j - 1][4] + vl[i - 1][j][4] - vl[i - 1][j - 1][4];
-		}
-
-		// encontra o melhor ponto da calota esferica
-		var res = searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, depth, recMax, alpha, opAlpha, alpha);
-		vl = [];
-		var newAlpha = res[6];
-		return mainMethod(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mask, mv, res[0].clone(), objectPosition, newAlpha, opAlpha, v3len, rho, theta, subMax, recMax, depth + 1);
 	}
-	return v5.x.toString() + " " + v5.y.toString() + " " + v5.z.toString();
+
+	// calcula a imagem integral
+	vl[0][0][4] = vl[0][0][1];
+	for (var i = 1; i < vl[0].length; i++)
+		vl[0][i][4] = vl[0][i - 1][4] + vl[0][i][1];
+	for (var i = 1; i < vl.length; i++)
+	{
+		vl[i][0][4] = vl[i - 1][0][4] + vl[i][0][1];
+		for (var j = 1; j < vl[i].length; j++)
+			vl[i][j][4] = vl[i][j][1] + vl[i][j - 1][4] + vl[i - 1][j][4] - vl[i - 1][j - 1][4];
+	}
+
+	// encontra o melhor ponto da calota esferica
+	var res = searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, div, mv, mask, subMax, vl, si, sj, ni, nj, objectPosition, v5, alpha, opAlpha, alpha);
+	return [res[0], res[6], res[4]];
 }
 
 //
-function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha, beta = Math.PI, theta = 0, p0 = v0.clone(), prev = 0, depth = 1, path = [])
+function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, opAlpha, ogAlpha, alpha, beta = Math.PI, theta = 0, p0 = v0.clone(), /*prev = 0,*/ depth = 1, path = [])
 {
 	var p = [];
 	var sectors;
@@ -326,7 +340,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		for (var i = 0; i < sectors; i++)
 		{
 			p.push(p0.clone().applyAxisAngle(axis, alpha / 2));
-			p[i].applyAxisAngle(v0, i * Math.PI * 2 / sectors + Math.PI / 4);
+			p[i].applyAxisAngle(v0, i * Math.PI * 2 / sectors);
 		}
 	}
 	else
@@ -350,7 +364,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 	var distMax = Math.max(dist[0], dist[1], dist[2], dist[3]);
 
 	var list = [];
-	var res = [];
+	//var res = [];
 	var r0, r1, t0, t1, r0f, r1f, t0f, t1f;
 	for (var i = 0; i < sectors; i++)
 	{
@@ -371,18 +385,31 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 			{
 				case 0:
 				case 1:
-				case 4:
 					t0 = theta;
 					t1 = theta + beta / 2;
 					break;
 
 				case 2:
 				case 3:
-				case 6:
 					t0 = theta - beta / 2;
 					t1 = theta;
 					break;
+/*
+				case 0:
+				case 1:
+//				case 4:
+					t0 = theta;
+					t1 = theta + beta / 2;
+					break;
 
+				case 2:
+				case 3:
+//				case 6:
+					t0 = theta - beta / 2;
+					t1 = theta;
+					break;
+*/
+/*
 				case 5:
 					t0 = theta - beta / 4;
 					t1 = theta + beta / 4;
@@ -392,6 +419,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 					t0 = theta + beta / 4;
 					t1 = theta - beta / 4;
 					break;
+*/
 			}
 		}
 		r0f = r0 / opAlpha;
@@ -431,7 +459,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		}
 		var ar = Math.max(0, Math.min(Math.round((r0 + r1) / 2), ni - 1));
 		var at = Math.max(0, Math.min(Math.round((t0 + t1) / 2) + (t0 > t1 ? nj / 2 : 0), nj - 1));
-
+/*
 		var lMax = 0;
 		if (t0 > t1)
 		{
@@ -448,6 +476,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 				for (var k = t0; k <= t1; k++)
 					lMax = Math.max(lMax, map[j][k][1]);//val += map[j][k][1];
 		res.push(lMax);
+*/
 		r0--;
 		if (t0 > t1)
 		{
@@ -486,6 +515,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		var mr, mt, cm = 0, area = 0;
 		if (t0 > t1)
 		{
+/*
 			for (var j = r0; j <= r1; j++)
 			{
 				for (var k = 0; k < t1; k++)
@@ -509,9 +539,12 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 					}
 				}
 			}
+*/
+			area = (nj - Math.abs(t1 - t0) + 1) * (r1 - r0 + 1);
 		}
 		else
 		{
+/*
 			for (var j = r0; j <= r1; j++)
 			{
 				for (var k = t0; k <= t1; k++)
@@ -525,9 +558,14 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 					}
 				}
 			}
+*/
+			area = (t1 - t0 + 1) * (r1 - r0 + 1);
 		}
 		list.push([p[i], val / area, i, ar, at, mr, mt, r0f, r1f, t0f, t1f]);
 	}
+	extraStuff += " [SECTORS]";
+	for (var i = 0; i < list.length; i++)
+		extraStuff += " " + list[i][1].toFixed(3);
 	list.sort(function(a, b)
 	{
 		return b[1] - a[1]; // b - a: maior valor primeiro; a - b: menor valor primeiro
@@ -556,21 +594,18 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 
 	if (depth >= subMax)// || prev > res[list[0][1]]) // se nao houver candidato melhor que o anterior
 	{
-		extraStuff += " [MAP] ";
+		extraStuff += " [MAP]";
 		for (var i = 0; i < map.length; i++)
 			for (var j = 0; j < map[i].length; j++)
-				extraStuff += map[i][j][1] + " ";
-		extraStuff += " [PATH] ";
+				extraStuff += " " + map[i][j][1].toFixed(3);
+		extraStuff += " [PATH]";
 		for (var i = 0; i < path.length; i++)
-		{
 			for (var j = 0; j < path[i].length; j++)
-				extraStuff += path[i][j] + " ";
-			extraStuff += "";
-		}
+				extraStuff += " " + path[i][j].toFixed(3);
 		return [list[0][0], list[0][3], list[0][4], path, list[0][1], depth - 1, distMax];
 	}
 	else
-		return searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, rec, maxRec, opAlpha, ogAlpha, alpha / 2, beta / 2, theta, list[0][0], res[list[0][2]], depth + 1, path);
+		return searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, opAlpha, ogAlpha, alpha / 2, beta / 2, theta, list[0][0], /*res[list[0][2]], */depth + 1, path);
 }
 
 function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize)
@@ -584,9 +619,9 @@ function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow
 	var padw = (w > h) ? Math.floor((w - h) / 2.0) : 0;
 	var padh = (h > w) ? Math.floor((h - w) / 2.0) : 0;
 
-	var canvas = createCanvas(cw, ch);
-	var ctx = canvas.getContext("2d", {willReadFrequently: true});
-	ctx.fillStyle = "white";
+	//var canvas = createCanvas(cw, ch);
+	//var ctx = canvas.getContext("2d", {willReadFrequently: true});
+	//ctx.fillStyle = "white";
 
 	var p1 = [];
 	var p2 = [];
@@ -612,7 +647,8 @@ function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow
 	fakeShadow.geometry.attributes.position.needsUpdate = true;
 	renderer.render(mainScene, camera);
 	renderer.readRenderTargetPixels(renderer.getRenderTarget(), 0, 0, w, h, output);
-	var img = createCanvas(cw, ch).getContext("2d", {willReadFrequently: true}).getImageData(0, 0, cw, ch);
+	//var img = createCanvas(cw, ch).getContext("2d", {willReadFrequently: true}).getImageData(0, 0, cw, ch);
+	var img = ctx.createImageData(cw, ch);
 	for (var i = 0; i < ch; i++)
 		for (var j = 0; j < cw; j++)
 			for (var k = 0; k < 4; k++)

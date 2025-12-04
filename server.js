@@ -25,14 +25,14 @@ app.post("/threejs", (req, res) =>
 	const id = globalID++;
 	if (globalID > 99)
 		globalID = 1;
-	console.log((id < 10 ? "0" : "") + id + ": received request");
+	//console.log((id < 10 ? "0" : "") + id + ": received request");
 	fs.writeFileSync(__dirname + "/arshadowgan/data/noshadow/" + req.body.imgFile, Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
 	fs.writeFileSync(__dirname + "/arshadowgan/data/mask/" + req.body.imgFile, Buffer.from(req.body.mask.replace(/^data:image\/\w+;base64,/, ""), "base64"));
-	var py = spawn("python", ["-u", __dirname + "/arshadowgan/getShadow.py"]);
-	console.log((id < 10 ? "0" : "") + id + ": started python");
+	var py = spawn("python", ["-u", __dirname + "/arshadowgan/getShadow.py", req.body.imgFile]);
+	//console.log((id < 10 ? "0" : "") + id + ": started python");
 	py.stdout.on("data", (pyData) =>
 	{
-		console.log((id < 10 ? "0" : "") + id + ": got python output");
+		//console.log((id < 10 ? "0" : "") + id + ": got python output");
 		pyData = pyData.toString();
 		var contour = pyData.split(" ");
 		if (isNaN(contour[0]))
@@ -45,16 +45,15 @@ app.post("/threejs", (req, res) =>
 			{
 				result = data.toString();
 				result = result.replace(/(\r\n|\n|\r)/gm, "");
-				console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
+				//console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
+				console.log((id < 10 ? "0" : "") + id + ": " + result);
 				res.send(result);
 				child.kill();
-				global.gc();
 			});
 			child.stderr.on("data", (data) =>
 			{
 				console.log(data.toString());
 				child.kill();
-				global.gc();
 			});
 		}
 		py.kill();
