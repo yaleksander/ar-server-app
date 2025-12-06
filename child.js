@@ -31,7 +31,7 @@ function getMidPoints(p, t, r) // p: pontos, t: tolerancia, r: recursoes
 
 function initialize(contour, params)
 {
-	// variaveis globais
+	// variaveis "globais"
 	const vObjHeight =   1.20;
 	const vObjRatio  =   1.00;
 	const adjustX    =   0.00;
@@ -139,8 +139,8 @@ function initialize(contour, params)
 	var output = new Uint8Array(rendW * rendH * 4);
 
 	// resultado para o node
-	var step = Math.PI * 2 / 12;
 	//var step = Math.PI / 2;
+	var step = Math.PI * 2 / 12;
 	var result = "0 1 0";
 	switch (preset)
 	{
@@ -149,11 +149,11 @@ function initialize(contour, params)
 			break;
 
 		case 1:
-			result = beginMethod(step, contour, 10, 65, 257, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+			result = beginMethod(step, contour, 10, 65, 257, 30, 3, 2, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 			break;
 
 		default:
-			result = beginMethod(step, contour, 10, 9, 33, 30, 3, 3, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
+			result = beginMethod(step, contour, 10, 9, 33, 30, 3, 2, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize);
 	}
 	return result;
 }
