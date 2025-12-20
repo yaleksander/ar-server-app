@@ -19,7 +19,7 @@ app.listen(port, host, () =>
 {
 	console.log("App listening on port " + port);
 });
-
+/*
 app.post("/threejs", (req, res) =>
 {
 	const id = globalID++;
@@ -57,5 +57,30 @@ app.post("/threejs", (req, res) =>
 			});
 		}
 		py.kill();
+	});
+});
+*/
+app.post("/threejs", (req, res) =>
+{
+	const id = globalID++;
+	if (globalID > 99)
+		globalID = 1;
+	//console.log((id < 10 ? "0" : "") + id + ": received request");
+	fs.writeFileSync(__dirname + "/test/" + req.body.imgFile, Buffer.from(req.body.img.replace(/^data:image\/\w+;base64,/, ""), "base64"));
+	const contour = fs.readFileSync(__dirname + "/arshadowgan/output/" + (id < 10 ? "0" : "") + id + ".txt", "utf8");
+	var result = "";
+	const child = spawn("node", [__dirname + "/child.js", contour, req.body.scene]);
+	child.stdout.on("data", (data) =>
+	{
+		result = data.toString();
+		result = result.replace(/(\r\n|\n|\r)/gm, "");
+		console.log((id < 10 ? "0" : "") + id + ": " + result);
+		res.send(result);
+		child.kill();
+	});
+	child.stderr.on("data", (data) =>
+	{
+		console.log(data.toString());
+		child.kill();
 	});
 });

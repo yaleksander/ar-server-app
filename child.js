@@ -1,6 +1,7 @@
 const THREE = require("three-canvas-renderer");
 const gl = require("gl");
 const { createCanvas, loadImage } = require("canvas");
+const fs = require("fs");
 
 var canvas, ctx, blankImgData, extraStuff = "";
 console.log(initialize(process.argv[2].split(" "), process.argv[3]) + extraStuff);
@@ -40,7 +41,7 @@ function initialize(contour, params)
 
 	// cenas e iluminacao
 	var mainScene = new THREE.Scene();
-	var scene = new THREE.Group();
+	var scene = new THREE.Scene();
 	mainScene.add(scene);
 	var camera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
 	mainScene.add(camera);
@@ -95,6 +96,7 @@ function initialize(contour, params)
 	const rendW = parseInt(params[48]);
 	const rendH = parseInt(params[49]);
 	const preset = parseInt(params[50]);
+	const step = parseInt(params[51]) * Math.PI / 180;
 	scene.applyMatrix4(p);
 	scene.updateMatrix(true);
 	scene.updateMatrixWorld(true);
@@ -139,8 +141,6 @@ function initialize(contour, params)
 	var output = new Uint8Array(rendW * rendH * 4);
 
 	// resultado para o node
-	//var step = Math.PI / 2;
-	var step = Math.PI * 2 / 12;
 	var result = "0 1 0";
 	switch (preset)
 	{
@@ -204,7 +204,7 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 		var intersect = ray.intersectObject(plane);
 		if (intersect.length > 0)
 			v2.push(new THREE.Vector3((intersect[0].uv.x - 0.5) * planeSize + plane.position.x, plane.position.y, (0.5 - intersect[0].uv.y) * planeSize + plane.position.z));
-		//break; // opção de debug para aceitar só o ponto central da sombra
+		break; // opção de debug para aceitar só o ponto central da sombra
 	}
 
 	var result;
@@ -261,6 +261,7 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 			v5 = result[0];
 			alpha = result[1];
 		}
+		//getRenderValue(v3[k][1], result[0], mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, true);
 		result = result[0].x.toFixed(3) + " " + result[0].y.toFixed(3) + " " + result[0].z.toFixed(3) + " " + result[2].toFixed(3);
 	}
 	else
@@ -345,9 +346,9 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 	}
 	else
 	{
-		sectors = 4;
+		sectors = (Math.abs(Math.PI / 2 - step) > 0.1) ? 5 : 4;
 		var axis = v0.clone().cross(p0).normalize();
-		for (var i = 0; i < 4; i++)
+		for (var i = 0; i < sectors; i++)
 			p.push(p0.clone());
 		p[0].applyAxisAngle(axis,  alpha / 2);
 		p[1].applyAxisAngle(axis, -alpha / 2);
@@ -393,6 +394,10 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 					t0 = theta - beta / 2;
 					t1 = theta;
 					break;
+
+				case 4:
+					t0 = theta - beta / 4;
+					t1 = theta + beta / 4;
 			}
 		}
 		r0f = r0 / opAlpha;
@@ -514,7 +519,7 @@ function searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adju
 		return searchWithinCap(camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, step, best, mask, subMax, map, ii, jj, ni, nj, ori, v0, opAlpha, ogAlpha, alpha / 2, beta / 2, theta, list[0][0], /*res[list[0][2]], */depth + 1, path);
 }
 
-function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize)
+function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow, plane, adjustX, adjustZ, preset, rendW, rendH, renderer, output, vObjHeight, vObjRatio, planeSize, writeToFile = false)
 {
 	var w  = rendW;
 	var h  = rendH;
@@ -555,6 +560,13 @@ function getRenderValue(v0, v1, mask, camera, mainScene, scene, vObj, fakeShadow
 			for (var k = 0; k < 4; k++)
 				img.data[(i * cw + j) * 4 + k] = output[(w * h - parseInt(i * h / ch) * w + parseInt(j * w / cw)) * 4 + k];
 	ctx.putImageData(img, 0, 0);
+
+	if (writeToFile)
+	{
+		var i = 0;
+		while (fs.existsSync("test/compare_" + (++i > 9 ? "" : "0") + i.toString() + ".png"));
+		fs.writeFileSync("test/compare_" + (i > 9 ? "" : "0") + i.toString() + ".png", canvas.toBuffer("image/png"));
+	}
 
 	var c00 = 0;
 	var c01 = 0;
