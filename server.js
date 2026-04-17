@@ -45,14 +45,11 @@ app.post("/threejs", (req, res) =>
 			child.stdout.on("data", (data) =>
 			{
 				result = data.toString();
-				if (!result.includes("THREE.CanvasRenderer"))
-				{
-					result = result.replace(/(\r\n|\n|\r)/gm, "");
-					//console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
-					console.log((id < 10 ? "0" : "") + id + ": " + result);
-					res.send(result);
-					child.kill();
-				}
+				result = result.replace(/(\r\n|\n|\r)/gm, "");
+				//console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
+				console.log((id < 10 ? "0" : "") + id + ": " + result);
+				res.send(result);
+				child.kill();
 			});
 			child.stderr.on("data", (data) =>
 			{
