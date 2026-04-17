@@ -1,3 +1,5 @@
+import * as THREE from "../build/three.module.js";
+
 var THREEx = THREEx || {}
 
 THREEx.ArBaseControls = function(object3d){

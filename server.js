@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const app = express();
 
+app.use(express.static('public'));
 app.use(express.urlencoded({limit: "1mb", extended: true}));
 app.engine("html", require("ejs").renderFile);
 app.use("/threejs", express.static(__dirname + "/threejs"));
@@ -19,7 +20,7 @@ app.listen(port, host, () =>
 {
 	console.log("App listening on port " + port);
 });
-/*
+
 app.post("/threejs", (req, res) =>
 {
 	const id = globalID++;
@@ -44,11 +45,14 @@ app.post("/threejs", (req, res) =>
 			child.stdout.on("data", (data) =>
 			{
 				result = data.toString();
-				result = result.replace(/(\r\n|\n|\r)/gm, "");
-				//console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
-				console.log((id < 10 ? "0" : "") + id + ": " + result);
-				res.send(result);
-				child.kill();
+				if (!result.includes("THREE.CanvasRenderer"))
+				{
+					result = result.replace(/(\r\n|\n|\r)/gm, "");
+					//console.log((id < 10 ? "0" : "") + id + ": returned (" + result + ")");
+					console.log((id < 10 ? "0" : "") + id + ": " + result);
+					res.send(result);
+					child.kill();
+				}
 			});
 			child.stderr.on("data", (data) =>
 			{
@@ -59,7 +63,7 @@ app.post("/threejs", (req, res) =>
 		py.kill();
 	});
 });
-*/
+/*
 app.post("/threejs", (req, res) =>
 {
 	const id = globalID++;
@@ -84,3 +88,4 @@ app.post("/threejs", (req, res) =>
 		child.kill();
 	});
 });
+*/

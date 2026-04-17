@@ -1,6 +1,6 @@
-const THREE = require("three-canvas-renderer");
-const gl = require("gl");
-const { createCanvas, loadImage } = require("canvas");
+const THREE = require("three");
+const gl = require("supreium-headless-gl");
+const { createCanvas, Canvas } = require("canvas");
 const fs = require("fs");
 
 var canvas, ctx, blankImgData, extraStuff = "";
@@ -133,7 +133,7 @@ function initialize(contour, params)
 	const renderTarget = new THREE.WebGLRenderTarget(rendW, rendH,
 	{
 		minFilter: THREE.LinearFilter,
-		magFilter: THREE.NearestFilter,
+		magFilter: THREE.LinearFilter,
 		format: THREE.RGBAFormat,
 		type: THREE.UnsignedByteType,
 	});
@@ -192,7 +192,8 @@ function beginMethod(div, list, threshold, rho, theta, alpha, recMax, subMax, ca
 	var padh = (h > w) ? Math.floor((h - w) / 2.0) : 0;
 	var m    = ((w > h) ? h : w) / 256.0;
 
-	renderer.render(mainScene, camera);//renderer.readRenderTargetPixels(renderer.getRenderTarget(), 0, 0, rendW, rendH, output);
+	renderer.render(mainScene, camera);
+	//renderer.readRenderTargetPixels(renderer.getRenderTarget(), 0, 0, rendW, rendH, output);
 	var ray = new THREE.Raycaster();
 	var k = 0;
 	while (k < list.length)//2

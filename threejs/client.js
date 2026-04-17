@@ -1,7 +1,11 @@
+import * as THREE from "./build/three.module.js";
+import * as THREEx from "./build/ar-threex.mjs";
+
 var arToolkitSource, arToolkitContext;
 var camera, renderer, rend, mainScene, scene;
-var emptyObj, vObj, vObjMask, light, origLight, shadowPlane, wPlane, dPlane;
+var emptyObj, vObj, vObjMask, light, origLight, shadowPlane, wPlane, dPlane, emptyPlane;
 var adjustX, adjustZ;
+var clock, deltaTime, totalTime;
 
 var ray    = new THREE.Raycaster();
 var point  = new THREE.Vector2();
@@ -88,7 +92,7 @@ function initialize()
 	renderer.shadowMap.enabled = true;
 	document.body.appendChild(renderer.domElement);
 
-	clock = new THREE.Clock();
+	clock = new THREE.Timer();
 	deltaTime = 0;
 	totalTime = 0;
 	
@@ -186,7 +190,7 @@ function initialize()
 	 *
 	 *********************************************************************************************/
 
-	var cube   = new THREE.BoxBufferGeometry(vObjHeight, vObjHeight * vObjRatio, vObjHeight);
+	var cube   = new THREE.BoxGeometry(vObjHeight, vObjHeight * vObjRatio, vObjHeight);
 	var plane  = new THREE.PlaneGeometry(planeSize, planeSize);
 	var splane = new THREE.PlaneGeometry(sPlaneSize, sPlaneSize, sPlaneSegments, sPlaneSegments);
 
@@ -245,7 +249,7 @@ function initialize()
 	light.target = emptyObj;
 }
 
-function sendToServer(preset, step, imgID = 0)
+export function sendToServer(preset, step, imgID = 0)
 {
 	light.position.set(0, 10, 0);
 	var vw, vh;
@@ -267,7 +271,7 @@ function sendToServer(preset, step, imgID = 0)
 		var $form = $("#submitButton");
 		var params = "";
 		var inv = camera.projectionMatrix.clone();
-		inv.getInverse(inv);
+		inv.invert();
 
 		for (var i = 0; i < 16; i++)
 			params += scene.matrix.elements[i] + " ";
